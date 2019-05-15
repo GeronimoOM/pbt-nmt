@@ -3,8 +3,8 @@ import os
 import numpy as np
 
 from model import define_nmt
-from data_utils import load_nmt
 from nmt_utils import nmt_generator, nmt_predict, eval_bleu_score
+from data_utils import load_nmt
 
 
 def load_wmt(data_folder='data', maxlen=30, split=0.5):
@@ -37,15 +37,31 @@ if __name__ == '__main__':
     timesteps = 30
     batch_size = 64
 
+    weights = 'pbt_weights.h5'
+
     en_train, en_test, en_tokenizer, de_train, de_test, de_tokenizer = load_wmt(split=0.3)
     en_vocab_size, de_vocab_size = len(en_tokenizer), len(de_tokenizer)
-
     model, encoder_model, decoder_model = define_nmt(hidden_size, embedding_size, timesteps,
                                                      en_vocab_size, de_vocab_size)
 
-    generator = nmt_generator(en_train, de_train, de_vocab_size, batch_size, shuffle=True)
-    model.fit_generator(generator, steps_per_epoch=en_train.shape[0]//batch_size, epochs=2)
+    if weights:
+        model.load_weights(weights)
+    else:
+        generator = nmt_generator(en_train, de_train, de_vocab_size, batch_size, shuffle=True)
+        model.fit_generator(generator, steps_per_epoch=en_train.shape[0]//batch_size, epochs=2)
 
-    print(eval_bleu_score(encoder_model, decoder_model, en_test[:100], de_test[:100], batch_size))
+    sample_size = 5
+    sample_index = np.random.choice(len(en_test), sample_size)
+    sample_src = en_test[sample_index]
+    sample_tar = de_test[sample_index]
+    sample_pred = nmt_predict(encoder_model, decoder_model, sample_src, sample_size)
+
+    for s, t, p in zip(sample_src, sample_tar, sample_pred):
+        print('[src] ' + en_tokenizer.sequences_to_texts(s))
+        print('[tar] ' + de_tokenizer.sequences_to_texts(t))
+        print('[pred] ' + de_tokenizer.sequences_to_texts(p))
+        print()
+
+    #print(eval_bleu_score(encoder_model, decoder_model, en_test[:100], de_test[:100], batch_size))
 
 

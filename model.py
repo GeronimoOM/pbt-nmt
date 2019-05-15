@@ -1,14 +1,15 @@
 from keras import Input, Model
-from keras.layers import concatenate, dot, Embedding, GRU, Dense, Activation
+from keras.layers import concatenate, dot, Dropout, Embedding, GRU, Dense, Activation
 
 
 def define_nmt(hidden_size, embedding_size, timesteps, src_vocab_size, tar_vocab_size):
-    # trainable layers
+    # layers with parameters
     encoder_emb = Embedding(src_vocab_size, embedding_size)
     encoder_gru = GRU(hidden_size, return_sequences=True, return_state=True)
     decoder_emb = Embedding(tar_vocab_size, embedding_size)
     decoder_gru = GRU(hidden_size, return_sequences=True, return_state=True)
     decoder_tan = Dense(hidden_size, activation="tanh")
+    decoder_drop = Dropout(rate=0.4)
     decoder_softmax = Dense(tar_vocab_size, activation='softmax')
 
     def define_encoder(encoder_inputs):
@@ -24,6 +25,7 @@ def define_nmt(hidden_size, embedding_size, timesteps, src_vocab_size, tar_vocab
         context = dot([attention, encoder_states], axes=[2, 1])
         decoder_context = concatenate([context, decoder_out])
         decoder_pred = decoder_tan(decoder_context)
+        decoder_pred = decoder_drop(decoder_pred)
         decoder_pred = decoder_softmax(decoder_pred)
         return decoder_pred, decoder_state
 

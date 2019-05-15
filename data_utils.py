@@ -16,42 +16,37 @@ def train_test_split(data, split, seed=None):
     return train, test
 
 
-def read_text(path):
-    filters = '0123456789!"„“#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
+def read_texts(path):
     with open(path, 'r') as file:
-        return [[w.replace("'", '') for w in text_to_word_sequence(t, filters=filters)]
-                for t in file]
+        return list(file)
 
 
-def encode_text(train, test, is_source, maxlen):
+def texts_to_words(texts):
+    filters = '0123456789!"„“#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
+    return [[w.replace("'", '') for w in text_to_word_sequence(t, filters=filters)] for t in texts]
+
+
+def fit_encode_texts(train, test, is_source, maxlen):
     counter = Counter(w for t in train for w in t)
     vocab = set([w for w, c in counter.items() if c >= 5])
     tokenizer = Tokenizer([[w for w in t if w in vocab] for t in train])
 
-    if is_source:
-        train = text2sequences(tokenizer, train, padding_type='pre', maxlen=maxlen)
-        test = text2sequences(tokenizer, test, padding_type='pre', maxlen=maxlen)
-    else:
-        train = text2sequences(tokenizer, train, maxlen=maxlen)
-        test = text2sequences(tokenizer, test, maxlen=maxlen)
+    padding_type = 'pre' if is_source else 'post'
+    train = tokenizer.texts_to_sequences(train, maxlen, padding_type)
+    test = tokenizer.texts_to_sequences(test, maxlen, padding_type)
+
     return train, test, tokenizer
 
 
-def text2sequences(tokenizer, text, padding_type='post', maxlen=None):
-    encoded_text = tokenizer.texts_to_sequences(text)
-    sequences = pad_sequences(encoded_text, maxlen=maxlen, padding=padding_type, truncating=padding_type)
-    return sequences
-
-
 def load_nmt(src_path, tar_path, maxlen, split, seed):
-    src_text = read_text(src_path)
-    tar_text = read_text(tar_path)
+    src_text = read_texts(src_path)
+    tar_text = read_texts(tar_path)
 
     src_train_text, src_test_text = train_test_split(src_text, split, seed)
     tar_train_text, tar_test_text = train_test_split(tar_text, split, seed)
 
-    src_train, src_test, src_tokenizer = encode_text(src_train_text, src_test_text, is_source=True, maxlen=maxlen)
-    tar_train, tar_test, tar_tokenizer = encode_text(tar_train_text, tar_test_text, is_source=False, maxlen=maxlen)
+    src_train, src_test, src_tokenizer = fit_encode_texts(src_train_text, src_test_text, is_source=True, maxlen=maxlen)
+    tar_train, tar_test, tar_tokenizer = fit_encode_texts(tar_train_text, tar_test_text, is_source=False, maxlen=maxlen)
 
     return src_train, src_test, src_tokenizer, tar_train, tar_test, tar_tokenizer
 
@@ -81,10 +76,24 @@ class Tokenizer:
     def __len__(self):
         return len(self.idx2word)
 
-    def texts_to_sequences(self, texts):
-        return [[Tokenizer.BOS] + [self.word2idx.get(word, Tokenizer.UNK) for word in text] for text in texts]
+    def texts_to_sequences(self, texts, maxlen, padding_type):
+        if isinstance(texts[0], str):
+            texts = texts_to_words(texts)
 
-    def sequences_to_texts(self, seqs):
-        return [[self.idx2word[idx] for idx in seq] for seq in seqs]
+        seqs = [[Tokenizer.BOS] + [self.word2idx.get(word, Tokenizer.UNK) for word in text] for text in texts]
+        seqs = pad_sequences(seqs, maxlen=maxlen, padding=padding_type, truncating='post')
+        return seqs
+
+    def sequences_to_texts(self, seqs, as_str=True):
+        texts = []
+        for seq in seqs:
+            seq = np.trim_zeros(seq)
+            if seq[0] == Tokenizer.BOS:
+                seq = seq[1:]
+            text = [self.idx2word[idx] for idx in seq]
+            if as_str:
+                text = ' '.join(text)
+            texts.append(text)
+        return texts
 
 
