@@ -7,7 +7,8 @@ from data_utils import load_nmt
 from nmt_utils import nmt_generator, nmt_predict, eval_bleu_score
 
 
-def load_wmt(path='data/europarl.npz', maxlen=30, split=0.5):
+def load_wmt(data_folder='data', maxlen=30, split=0.5):
+    path = os.path.join(data_folder, 'europarl.npz')
     if os.path.exists(path):
         with np.load(path, allow_pickle=True) as data:
             en_train, en_test, en_tokenizer = data['en_train'], data['en_test'], data['en_tokenizer']
@@ -15,7 +16,6 @@ def load_wmt(path='data/europarl.npz', maxlen=30, split=0.5):
             return en_train, en_test, en_tokenizer.item(), de_train, de_test, de_tokenizer.item()
 
     else:
-        data_folder = 'data'
         en_file = 'europarl-v7.de-en.en'
         de_file = 'europarl-v7.de-en.de'
 
@@ -37,8 +37,7 @@ if __name__ == '__main__':
     timesteps = 30
     batch_size = 64
 
-    data_path = 'data/europarl.npz'
-    en_train, en_test, en_tokenizer, de_train, de_test, de_tokenizer = load_wmt(path=data_path, split=0.3)
+    en_train, en_test, en_tokenizer, de_train, de_test, de_tokenizer = load_wmt(split=0.3)
     en_vocab_size, de_vocab_size = len(en_tokenizer), len(de_tokenizer)
 
     model, encoder_model, decoder_model = define_nmt(hidden_size, embedding_size, timesteps,
