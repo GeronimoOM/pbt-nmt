@@ -27,6 +27,8 @@ def texts_to_words(texts):
 
 
 def fit_encode_texts(train, test, is_source, maxlen):
+    train = texts_to_words(train)
+
     counter = Counter(w for t in train for w in t)
     vocab = set([w for w, c in counter.items() if c >= 5])
     tokenizer = Tokenizer([[w for w in t if w in vocab] for t in train])
