@@ -1,8 +1,8 @@
 import numpy as np
 from keras.utils import to_categorical
-import nltk
 
 from data_utils import Tokenizer
+from metrics import bleu_score
 
 
 def nmt_train_generator(src, tar, tar_vocab_size, batch_size=64, shuffle=True):
@@ -25,12 +25,8 @@ def nmt_infer_generator(src, tar, batch_size=64):
     indices = np.arange(len(src))
 
     for idx in range(0, indices.shape[0] - batch_size + 1, batch_size):
-        batch_index = indices[idx:idx + batch_size]
-
-        input_src = src[batch_index]
-        input_tar = tar[batch_index, :-1]
-
-        yield input_src, input_tar
+        batch_index = indices[idx:idx+batch_size]
+        yield src[batch_index], tar[batch_index]
 
 
 def nmt_infer(encoder, decoder, inputs):
@@ -58,15 +54,12 @@ def nmt_infer(encoder, decoder, inputs):
     return preds.T
 
 
-def bleu_score(y_true, y_pred, smoothing=nltk.translate.bleu_score.SmoothingFunction().method4):
-    return nltk.translate.bleu_score.sentence_bleu([y_true], y_pred, smoothing_function=smoothing)
-
-
 def bleu_score_enc_dec(encoder, decoder, src, tar, batch_size=64):
     n_batches = src.shape[0] // batch_size
-    scores = np.zeros(batch_size * n_batches)
-    for b, (src, tar) in enumerate(nmt_infer_generator(src, tar, batch_size)):
-        preds = nmt_infer(encoder, decoder, src)
-        scores[b*batch_size:(b+1)*batch_size] = [bleu_score(np.trim_zeros(t, trim='b'), np.trim_zeros(p, trim='b'))
-                                                 for t, p in zip(tar, preds)]
-    return np.mean(scores)
+    pred = np.zeros((batch_size * n_batches, tar.shape[1]))
+    for b, (src, _) in enumerate(nmt_infer_generator(src, tar, batch_size)):
+        pred[b * batch_size:(b + 1) * batch_size] = nmt_infer(encoder, decoder, src)
+
+    tar = [np.trim_zeros(t, trim='b') for t in tar]
+    pred = [np.trim_zeros(p, trim='b') for p in pred]
+    return bleu_score(tar, pred, smooth=True)
