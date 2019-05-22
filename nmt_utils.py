@@ -58,8 +58,8 @@ def nmt_infer(encoder, decoder, inputs):
     return preds.T
 
 
-def bleu_score(y_true, y_pred):
-    return nltk.translate.bleu_score.sentence_bleu([y_true], y_pred)
+def bleu_score(y_true, y_pred, smoothing=nltk.translate.bleu_score.SmoothingFunction().method4):
+    return nltk.translate.bleu_score.sentence_bleu([y_true], y_pred, smoothing_function=smoothing)
 
 
 def bleu_score_enc_dec(encoder, decoder, src, tar, batch_size=64):
@@ -67,5 +67,6 @@ def bleu_score_enc_dec(encoder, decoder, src, tar, batch_size=64):
     scores = np.zeros(batch_size * n_batches)
     for b, (src, tar) in enumerate(nmt_infer_generator(src, tar, batch_size)):
         preds = nmt_infer(encoder, decoder, src)
-        scores[b*batch_size:(b+1)*batch_size] = [bleu_score(t, p) for t, p in zip(tar, preds)]
+        scores[b*batch_size:(b+1)*batch_size] = [bleu_score(np.trim_zeros(t, trim='b'), np.trim_zeros(p, trim='b'))
+                                                 for t, p in zip(tar, preds)]
     return np.mean(scores)
