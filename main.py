@@ -1,7 +1,6 @@
 import os
 
 import numpy as np
-from sklearn.grid_search import ParameterGrid
 
 from model import define_nmt
 from nmt_utils import nmt_train_generator, bleu_score_enc_dec

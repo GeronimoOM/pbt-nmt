@@ -16,7 +16,7 @@ class PBT:
                  steps_ready: int):
         self.population_size = population_size
         parameters = ParameterGrid(parameters)
-        self.population = [build_member(parameters[p])
+        self.population = [build_member(**parameters[p])
                            for p in np.random.choice(population_size, size=population_size, replace=False)]
 
         self.steps_ready = steps_ready
