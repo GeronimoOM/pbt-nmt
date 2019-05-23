@@ -1,12 +1,14 @@
 import os
 
 import numpy as np
+from sklearn.grid_search import ParameterGrid
 
 from model import define_nmt
 from nmt_utils import nmt_train_generator, bleu_score_enc_dec
 from data_utils import load_nmt
 from pbt import PBT
 from members import Member
+from train_utils import LossLogger, BleuLogger
 
 
 def load_wmt(data_folder='data', maxlen=30, split=0.5):
@@ -70,23 +72,26 @@ if __name__ == '__main__':
                         callbacks=[loss_logger, bleu_logger])
     '''
     # default PBT
-    population = []
-    population_size = 2
-    for i in range(population_size):
-        model, encoder_model, decoder_model = define_nmt(
-            hidden_size, embedding_size,
-            timesteps, en_vocab_size, de_vocab_size, dropout, lr)
+    lr_values = np.geomspace(1e-4, 1e-1, num=4).tolist()
+    dropout_values = np.linspace(0.0, 0.5, num=6).tolist()
+    parameters = dict(lr=lr_values, dropout=dropout_values)
 
-        member = Member(model, tune_lr=True, use_eval_metric='bleu', custom_metrics={
+    population_size = 16
+
+    def build_member(lr, dropout):
+        model, encoder_model, decoder_model = \
+            define_nmt(hidden_size, embedding_size, timesteps,
+                       en_vocab_size, de_vocab_size, dropout, lr)
+
+        return Member(model, tune_lr=True, use_eval_metric='bleu', custom_metrics={
             'bleu': lambda x, y, _: bleu_score_enc_dec(encoder_model, decoder_model, x, y, batch_size)
         })
-        population.append(member)
 
     steps_ready = 1000
 
     generator_fn = lambda x, y, shuffle=True, looping=True: nmt_train_generator(x, y, de_vocab_size, batch_size,
                                                                                 shuffle=shuffle, looping=looping)
-    pbt = PBT(population, steps_ready=steps_ready)
-    pbt.train(en_train_t, de_train_t, en_train_v, de_train_v, steps=en_train.shape[0] // batch_size,
+    pbt = PBT(build_member, population_size, parameters, steps_ready=steps_ready)
+    pbt.train(en_train_t, de_train_t, en_train_v, de_train_v, steps=en_train.shape[0]//batch_size,
               eval_every=100, generator_fn=generator_fn)
 
