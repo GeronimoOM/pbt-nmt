@@ -1,10 +1,7 @@
 import keras
 from keras import Input, Model
 from keras.layers import concatenate, dot, Embedding, GRU, Dense, Activation
-import numpy as np
-
-from data_utils import Tokenizer
-from pbt.hyperparameters import DropoutHP
+from hyperparameters import DropoutHP
 
 
 def define_nmt(hidden_size, embedding_size, timesteps, src_vocab_size, tar_vocab_size,

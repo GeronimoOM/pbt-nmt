@@ -5,7 +5,7 @@ from data_utils import Tokenizer
 from metrics import bleu_score
 
 
-def nmt_train_generator(src, tar, tar_vocab_size, batch_size=64, shuffle=True):
+def nmt_train_generator(src, tar, tar_vocab_size, batch_size=64, shuffle=True, looping=True):
     indices = np.arange(len(src))
 
     while True:
@@ -19,6 +19,9 @@ def nmt_train_generator(src, tar, tar_vocab_size, batch_size=64, shuffle=True):
             output_tar = to_categorical(tar[batch_index, 1:], num_classes=tar_vocab_size)
 
             yield [input_src, input_tar], output_tar
+
+        if not looping:
+            raise StopIteration
 
 
 def nmt_infer_generator(src, tar, batch_size=64):

@@ -1,10 +1,12 @@
 import os
+
 import numpy as np
 
 from model import define_nmt
-from nmt_utils import nmt_train_generator, bleu_score, bleu_score_enc_dec
+from nmt_utils import nmt_train_generator, bleu_score_enc_dec
 from data_utils import load_nmt
-from train_utils import LossLogger, BleuLogger
+from pbt import PBT
+from members import Member
 
 
 def load_wmt(data_folder='data', maxlen=30, split=0.5):
@@ -32,13 +34,13 @@ def load_wmt(data_folder='data', maxlen=30, split=0.5):
 
 
 if __name__ == '__main__':
-    seed = 42
+    np.random.seed(42)
 
     en_train, en_test, en_tokenizer, de_train, de_test, de_tokenizer = load_wmt(split=0.5)
     en_vocab_size, de_vocab_size = len(en_tokenizer), len(de_tokenizer)
 
     batch_size = 64
-    val_size = 6400
+    val_size = 3200
     en_train_t, en_train_v = en_train[val_size:], en_train[:val_size]
     de_train_t, de_train_v = de_train[val_size:], de_train[:val_size]
 
@@ -55,18 +57,36 @@ if __name__ == '__main__':
     model, encoder_model, decoder_model = define_nmt(
         hidden_size, embedding_size,
         timesteps, en_vocab_size, de_vocab_size, dropout, lr)
-
+    '''
     train_generator = nmt_train_generator(en_train_t, de_train_t, de_vocab_size, batch_size)
-
+    
     eval_every = 100
 
     loss_logger = LossLogger()
     bleu_logger = BleuLogger((en_train_v, de_train_v), eval_every, batch_size,
                              de_vocab_size, encoder_model, decoder_model)
 
-    model.fit_generator(train_generator, steps_per_epoch=en_train.shape[0] // batch_size,
+    model.fit_generator(train_generator, steps_per_epoch=en_train.shape[0]//batch_size,
                         callbacks=[loss_logger, bleu_logger])
-
+    '''
     # default PBT
-    #TODO
+    population = []
+    population_size = 2
+    for i in range(population_size):
+        model, encoder_model, decoder_model = define_nmt(
+            hidden_size, embedding_size,
+            timesteps, en_vocab_size, de_vocab_size, dropout, lr)
+
+        member = Member(model, tune_lr=True, use_eval_metric='bleu', custom_metrics={
+            'bleu': lambda x, y, _: bleu_score_enc_dec(encoder_model, decoder_model, x, y, batch_size)
+        })
+        population.append(member)
+
+    steps_ready = 1000
+
+    generator_fn = lambda x, y, shuffle=True, looping=True: nmt_train_generator(x, y, de_vocab_size, batch_size,
+                                                                                shuffle=shuffle, looping=looping)
+    pbt = PBT(population, steps_ready=steps_ready)
+    pbt.train(en_train_t, de_train_t, en_train_v, de_train_v, steps=en_train.shape[0] // batch_size,
+              eval_every=100, generator_fn=generator_fn)
 

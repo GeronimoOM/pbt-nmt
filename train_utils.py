@@ -4,6 +4,22 @@ import numpy as np
 from nmt_utils import nmt_train_generator, bleu_score_enc_dec
 
 
+def batch_generator(x, y, batch_size=64, shuffle=True, looping=True):
+    indices = np.arange(x.shape[0])
+
+    while True:
+        if shuffle:
+            np.random.shuffle(indices)
+
+        for idx in range(0, x.shape[0] - batch_size + 1, batch_size):
+            batch_index = indices[idx:idx+batch_size]
+            yield x[batch_index], y[batch_index]
+
+        if not looping:
+            raise StopIteration
+
+
+
 class LossLogger(keras.callbacks.Callback):
     def on_train_begin(self, logs={}):
         self.losses = []

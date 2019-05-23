@@ -39,6 +39,8 @@ def bleu_score(reference_corpus, translation_corpus, max_order=4, smooth=False):
     else:
         geo_mean = 0
 
+    if translation_length == 0:
+        return 0
     ratio = float(translation_length) / reference_length
 
     if ratio > 1.0:
