@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import Callable
 
 import numpy as np
+import pandas as pd
 from keras.utils import Progbar
 from sklearn.model_selection import ParameterGrid
 
@@ -50,7 +51,8 @@ class PBT:
                 values = self._update_progress(results, metrics)
             progbar.update(step, values)
 
-        return results
+        return pd.concat([pd.DataFrame(v).assign(member=k)
+                          for k, v in results.items()])
 
     def ready(self, member):
         return member.steps % self.steps_ready == 0
@@ -92,4 +94,4 @@ class PBT:
         for model, model_results in results.items():
             for metric in metrics:
                 last_metrics[metric].append(model_results[-1][metric])
-        return [(metric, np.mean(values)) for metric, values in last_metrics.items()] 
+        return [(metric, np.mean(values)) for metric, values in last_metrics.items()]
