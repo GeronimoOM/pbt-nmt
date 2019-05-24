@@ -19,15 +19,6 @@ def batch_generator(x, y, batch_size=64, shuffle=True, looping=True):
             raise StopIteration
 
 
-
-class LossLogger(keras.callbacks.Callback):
-    def on_train_begin(self, logs={}):
-        self.losses = []
-
-    def on_batch_end(self, batch, logs={}):
-        self.losses.append(logs.get('loss'))
-
-
 class BleuLogger(keras.callbacks.Callback):
 
     def __init__(self, data, eval_every, batch_size, tar_vocab_size, encoder, decoder):
