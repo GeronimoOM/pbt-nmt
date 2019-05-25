@@ -9,12 +9,11 @@ from model import define_nmt
 
 class BleuLogger(keras.callbacks.Callback):
 
-    def __init__(self, data, eval_every, file, batch_size, tar_vocab_size, encoder, decoder):
+    def __init__(self, data, eval_every, batch_size, tar_vocab_size, encoder, decoder):
         self.src, self.tar = data
         self.generator = nmt_train_generator(self.src, self.tar,
                                              tar_vocab_size, batch_size)
         self.eval_every = eval_every
-        self.file = file
 
         self.batch_size = batch_size
         self.encoder = encoder
@@ -32,9 +31,6 @@ class BleuLogger(keras.callbacks.Callback):
             bleu = bleu_score_enc_dec(self.encoder, self.decoder, self.src, self.tar, self.batch_size)
             self.losses.append(loss)
             self.scores.append(bleu)
-
-            with open(self.file, 'w') as f:
-                f.write('loss: {}, bleu: {}\n'.format(loss, bleu))
 
 
 if __name__ == '__main__':
@@ -65,7 +61,7 @@ if __name__ == '__main__':
     steps = en_train.shape[0]//batch_size
     eval_every = 100
 
-    bleu_logger = BleuLogger((en_train_v, de_train_v), eval_every, 'logger.txt', batch_size,
+    bleu_logger = BleuLogger((en_train_v, de_train_v), eval_every, batch_size,
                              de_vocab_size, encoder_model, decoder_model)
 
     model.fit_generator(train_generator, steps_per_epoch=steps,

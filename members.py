@@ -2,7 +2,7 @@ from collections import deque
 
 import numpy as np
 
-from hyperparameters import find_hyperparameters_model, FloatHyperparameter
+from hyperparameters import find_hyperparameters_model, FloatExpHyperparameter
 from train_utils import batch_generator
 
 
@@ -22,7 +22,7 @@ class Member:
 
         self.hyperparameters = []
         if tune_lr:
-            lr = FloatHyperparameter('lr', self.model.optimizer.lr)
+            lr = FloatExpHyperparameter('lr', self.model.optimizer.lr)
             self.hyperparameters.append(lr)
         self.hyperparameters += find_hyperparameters_model(self.model)
 
@@ -67,7 +67,7 @@ class Member:
             'Members do not belong to the same population!'
         self.model.set_weights(member.model.get_weights())
         for i, hyperparameter in enumerate(self.hyperparameters):
-            hyperparameter.replace_with(member.hyperparameters[i])
+            hyperparameter.set(member.hyperparameters[i].get())
 
     def get_hyperparameter_config(self):
         return {'{}_{}'.format(h, i): v for i, hyperparameter in enumerate(self.hyperparameters)

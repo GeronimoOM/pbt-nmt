@@ -51,8 +51,11 @@ class PBT:
                 values = self._update_progress(results, metrics)
             progbar.update(step, values)
 
-        return pd.concat([pd.DataFrame(v).assign(member=k)
-                          for k, v in results.items()])
+        results = pd.concat([pd.DataFrame(v).assign(member=k)
+                             for k, v in results.items()])
+        best_model = self.population[np.array([np.mean(m.recent_eval) for m in self.population]).argmax()].model
+
+        return best_model, results
 
     def ready(self, member):
         return member.steps % self.steps_ready == 0
@@ -71,7 +74,7 @@ class PBT:
 
     def explore(self, member):
         for h in member.hyperparameters:
-            h.perturb([0.8, 1.2])
+            h.perturb(np.random.choice([0.8, 1.2]))
 
     def _collect_result(self, member):
         result = {
