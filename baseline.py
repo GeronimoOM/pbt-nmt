@@ -14,7 +14,7 @@ class BleuLogger(keras.callbacks.Callback):
         self.generator = nmt_train_generator(self.src, self.tar,
                                              tar_vocab_size, batch_size)
         self.eval_every = eval_every
-        self.file = open(file, 'w')
+        self.file = file
 
         self.batch_size = batch_size
         self.encoder = encoder
@@ -33,15 +33,13 @@ class BleuLogger(keras.callbacks.Callback):
             self.losses.append(loss)
             self.scores.append(bleu)
 
-            self.file.write('loss: {}, bleu: {}\n'.format(loss, bleu))
-
-    def on_train_end(self, logs=None):
-        self.file.close()
+            with open(self.file, 'w') as f:
+                f.write('loss: {}, bleu: {}\n'.format(loss, bleu))
 
 
 if __name__ == '__main__':
     np.random.seed(42)
-    en_train, en_test, en_tokenizer, de_train, de_test, de_tokenizer = load_wmt(split=0.5)
+    en_train, en_test, en_tokenizer, de_train, de_test, de_tokenizer = load_wmt(split=0.3)
     en_vocab_size, de_vocab_size = len(en_tokenizer), len(de_tokenizer)
 
     batch_size = 64
