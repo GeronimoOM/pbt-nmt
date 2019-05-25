@@ -2,7 +2,7 @@ import numpy as np
 
 from model import define_nmt
 from nmt_utils import nmt_train_generator, bleu_score_enc_dec
-from pbt import PBT
+from pbt import PbtOptimizer
 from members import Member
 from wmt import load_wmt
 
@@ -13,7 +13,7 @@ if __name__ == '__main__':
     en_vocab_size, de_vocab_size = len(en_tokenizer), len(de_tokenizer)
 
     batch_size = 64
-    val_size = 64#3200
+    val_size = 3200
     en_train_t, en_train_v = en_train[val_size:], en_train[:val_size]
     de_train_t, de_train_v = de_train[val_size:], de_train[:val_size]
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     generator_fn = lambda x, y, shuffle=True, looping=True: nmt_train_generator(x, y, de_vocab_size, batch_size,
                                                                                 shuffle=shuffle, looping=looping)
-    pbt = PBT(build_member, population_size, parameters, steps_ready=steps_ready)
+    pbt = PbtOptimizer(build_member, population_size, parameters, steps_ready=steps_ready)
     model, results = pbt.train(en_train_t, de_train_t, en_train_v, de_train_v, steps=steps,
                         eval_every=eval_every, generator_fn=generator_fn)
 

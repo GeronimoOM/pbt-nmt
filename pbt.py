@@ -9,7 +9,7 @@ from sklearn.model_selection import ParameterGrid
 from train_utils import batch_generator
 
 
-class PBT:
+class PbtOptimizer:
 
     def __init__(self, build_member: Callable,
                  population_size: int,
@@ -28,7 +28,7 @@ class PBT:
 
         metrics, values = self._init_progress()
         progbar = Progbar(steps, stateful_metrics=metrics)
-
+        progbar.update(0, values)
         train_gen = generator_fn(x_train, y_train)
         for step in range(1, steps + 1):
             x, y = next(train_gen)
@@ -49,7 +49,7 @@ class PBT:
 
             if step % eval_every == 0 or step == steps:
                 values = self._update_progress(results, metrics)
-            progbar.update(step, values)
+                progbar.update(step, values)
 
         results = pd.concat([pd.DataFrame(v).assign(member=k)
                              for k, v in results.items()])

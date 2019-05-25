@@ -33,7 +33,7 @@ def nmt_infer_generator(src, tar, batch_size=64):
 
 
 def nmt_infer(encoder, decoder, inputs):
-    preds = np.full((inputs.shape[1], inputs.shape[0]), Tokenizer.PAD)
+    preds = np.full((inputs.shape[1], inputs.shape[0]), Tokenizer.PAD, dtype=np.int32)
     decoder_inputs = np.full(inputs.shape[0], Tokenizer.BOS)
 
     encoder_out, encoder_state = encoder.predict(inputs)
@@ -59,9 +59,9 @@ def nmt_infer(encoder, decoder, inputs):
 
 def bleu_score_enc_dec(encoder, decoder, src, tar, batch_size=64):
     n_batches = src.shape[0] // batch_size
-    pred = np.zeros((batch_size * n_batches, tar.shape[1]))
-    for b, (src, _) in enumerate(nmt_infer_generator(src, tar, batch_size)):
-        pred[b * batch_size:(b + 1) * batch_size] = nmt_infer(encoder, decoder, src)
+    pred = np.zeros((batch_size * n_batches, tar.shape[1]), dtype=np.int32)
+    for b, (s, _) in enumerate(nmt_infer_generator(src, tar, batch_size)):
+        pred[b * batch_size:(b + 1) * batch_size] = nmt_infer(encoder, decoder, s)
 
     tar = [np.trim_zeros(t, trim='b') for t in tar]
     pred = [np.trim_zeros(p, trim='b') for p in pred]
