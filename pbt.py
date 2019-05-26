@@ -36,6 +36,7 @@ class PbtOptimizer:
                 member.step_on_batch(x, y)
                 if step % eval_every == 0 or step == steps:
                     member.eval(x_val, y_val, generator_fn)
+                    self.on_eval(member)
 
             for member in self.population:
                 if self.ready(member):
@@ -43,6 +44,7 @@ class PbtOptimizer:
                     if exploited:
                         self.explore(member)
                         member.eval(x_val, y_val, generator_fn)
+                        self.on_eval(member)
 
                 if step % eval_every == 0 or step == steps:
                     results[str(member)].append(self._collect_result(member))
@@ -74,7 +76,10 @@ class PbtOptimizer:
 
     def explore(self, member):
         for h in member.hyperparameters:
-            h.perturb(np.random.choice([0.8, 1.2]))
+            h.set(h.get() * np.random.choice([0.8, 1.2]))
+
+    def on_eval(self, member):
+        pass
 
     def _collect_result(self, member):
         result = {

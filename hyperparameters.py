@@ -15,9 +15,6 @@ class Hyperparameter(ABC):
     def set(self, value):
         pass
 
-    def perturb(self, coeff):
-        self.set(self.get() * coeff)
-
     @abstractmethod
     def get_config(self):
         pass
@@ -44,8 +41,11 @@ class FloatExpHyperparameter(FloatHyperparameter):
     def __init__(self, name, variable):
         super().__init__(name, variable)
 
-    def perturb(self, coeff):
-        self.set(np.power(10, np.log10(self.get()) * coeff))
+    def get(self):
+        return np.log10(K.get_value(self.variable))
+
+    def set(self, value):
+        K.set_value(self.variable, K.cast_to_floatx(np.power(10, value)))
 
 
 class DropoutHP(Hyperparameter, Dropout):

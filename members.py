@@ -8,7 +8,7 @@ from train_utils import batch_generator
 
 class Member:
 
-    def __init__(self, model, tune_lr=False, use_eval_metric='loss', custom_metrics={}):
+    def __init__(self, model, param_names, tune_lr=False, use_eval_metric='loss', custom_metrics={}):
         self.model = model
         self.steps = 0
 
@@ -25,9 +25,10 @@ class Member:
             lr = FloatExpHyperparameter('lr', self.model.optimizer.lr)
             self.hyperparameters.append(lr)
         self.hyperparameters += find_hyperparameters_model(self.model)
-
         if not self.hyperparameters:
             raise ValueError('The model has no hyperparameters to tune')
+
+        self.hyperparameter_config = {n: h for n, h in zip(param_names, self.hyperparameters)}
 
     def eval_metric(self):
         return self.metrics.get(self.use_eval_metric, self.loss)
@@ -70,8 +71,7 @@ class Member:
             hyperparameter.set(member.hyperparameters[i].get())
 
     def get_hyperparameter_config(self):
-        return {'{}_{}'.format(h, i): v for i, hyperparameter in enumerate(self.hyperparameters)
-                for h, v in hyperparameter.get_config().items()}
+        return {n: h.get() for n, h in self.hyperparameter_config.items()}
 
     def __str__(self):
         return str(id(self))
