@@ -33,6 +33,9 @@ class Member:
     def eval_metric(self):
         return self.metrics.get(self.use_eval_metric, self.loss)
 
+    def eval_metric_mean(self):
+        return np.mean(self.recent_eval)
+
     def step_on_batch(self, x, y):
         self.steps += 1
 

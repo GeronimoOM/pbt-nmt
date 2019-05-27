@@ -24,8 +24,8 @@ class PbtPsoOptimizer(PbtOptimizer):
         self.global_best = 0
         self.global_best_score = 0
         self.bounds = {n: (min(values), max(values)) for n, values in parameters.items()}
-        bound_diffs = {n: abs(hi - lo) for n, (lo, hi) in self.bounds.items()}
-        self.velocity = {m: {n: np.random.uniform(-bound_diffs[n], bound_diffs[n])
+        param_steps = {n: abs(hi - lo) / len(parameters[n]) for n, (lo, hi) in self.bounds.items()}
+        self.velocity = {m: {n: np.random.uniform(-param_steps[n], param_steps[n])
                              for n in m.hyperparameter_config.keys()}
                          for m in self.population}
 
@@ -38,7 +38,8 @@ class PbtPsoOptimizer(PbtOptimizer):
                       + self.phi1 * r1 * (member_best[n] - h.get()) \
                       + self.phi2 * r2 * (self.global_best[n] - h.get())
             velocity[n] = new_vel
-            h.set(max(min(h.get() + new_vel, self.bounds[n][1]), self.bounds[n][0]))
+            h.set(h.get() + new_vel)
+        member.recent_eval.clear()
 
         return True
 
@@ -46,11 +47,11 @@ class PbtPsoOptimizer(PbtOptimizer):
         pass
 
     def on_eval(self, member):
-        if member.eval_metric() > self.population_best_score[member]:
+        if member.eval_metric_mean() > self.population_best_score[member]:
             self.population_best[member] = member.get_hyperparameter_config()
-            self.population_best_score[member] = member.eval_metric()
-        if member.eval_metric() > self.global_best_score:
+            self.population_best_score[member] = member.eval_metric_mean()
+        if member.eval_metric_mean() > self.global_best_score:
             self.global_best = member.get_hyperparameter_config()
-            self.global_best_score = member.eval_metric()
+            self.global_best_score = member.eval_metric_mean()
 
 

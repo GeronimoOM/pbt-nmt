@@ -18,7 +18,7 @@ class PbtOptimizer:
         self.population_size = population_size
         parameters = ParameterGrid(parameters)
         self.population = [build_member(**parameters[p])
-                           for p in np.random.choice(population_size, size=population_size, replace=False)]
+                           for p in np.random.choice(len(parameters), size=population_size, replace=False)]
 
         self.steps_ready = steps_ready
 
@@ -55,7 +55,7 @@ class PbtOptimizer:
 
         results = pd.concat([pd.DataFrame(v).assign(member=k)
                              for k, v in results.items()])
-        best_model = self.population[np.array([np.mean(m.recent_eval) for m in self.population]).argmax()].model
+        best_model = self.population[np.array([m.eval_metric_mean() for m in self.population]).argmax()].model
 
         return best_model, results
 
@@ -63,11 +63,11 @@ class PbtOptimizer:
         return member.steps % self.steps_ready == 0
 
     def exploit(self, member):
-        evals = np.array([np.mean(m.recent_eval) for m in self.population])
+        evals = np.array([m.eval_metric_mean() for m in self.population])
         threshold_worst, threshold_best = np.percentile(evals, (20, 80))
-        if np.mean(member.recent_eval) < threshold_worst:
+        if member.eval_metric_mean() < threshold_worst:
             top_performers = [m for m in self.population
-                              if np.mean(m.recent_eval) > threshold_best]
+                              if m.eval_metric_mean() > threshold_best]
             if top_performers:
                 member.replace_with(np.random.choice(top_performers))
             return True

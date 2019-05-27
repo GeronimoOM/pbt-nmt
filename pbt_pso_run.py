@@ -45,7 +45,7 @@ if __name__ == '__main__':
     generator_fn = lambda x, y, shuffle=True, looping=True: nmt_train_generator(x, y, de_vocab_size, batch_size,
                                                                                 shuffle=shuffle, looping=looping)
     pbt = PbtPsoOptimizer(build_member, population_size, parameters, steps_ready=steps_ready,
-                          omega=0.5, phi1=0.3, phi2=0.7)
+                          omega=0.5, phi1=0.5, phi2=1.0)
     model, results = pbt.train(en_train_t, de_train_t, en_train_v, de_train_v, steps=steps,
                         eval_every=eval_every, generator_fn=generator_fn)
 
